@@ -1,6 +1,7 @@
-name: Crear APK Mi Juego 2D
+name: Crear APK
 
 on:
+  push:
   workflow_dispatch:
 
 jobs:
@@ -8,182 +9,112 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Preparar Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Preparar Android
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
-      - name: Instalar Android SDK
-        run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Instalar Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Crear proyecto Android
+      - name: Crear juego
         run: |
-          mkdir -p app/src/main/java/com/mijuego/dosd
+          mkdir -p app/src/main/java/com/juego/app
           mkdir -p app/src/main/res/values
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
+            repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
-
           dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories { google(); mavenCentral() }
           }
-
-          rootProject.name = "Mi_Juego_2D"
-          include(":app")
+          rootProject.name='MiJuego2D'
+          include ':app'
           EOF
 
           cat > build.gradle <<'EOF'
           plugins {
-              id 'com.android.application' version '8.7.3' apply false
+            id 'com.android.application' version '8.7.3' apply false
           }
-          EOF
-
-          cat > gradle.properties <<'EOF'
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          android.useAndroidX=true
           EOF
 
           cat > app/build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application'
-          }
+          plugins { id 'com.android.application' }
 
           android {
-              namespace 'com.mijuego.dosd'
-              compileSdk 35
+            namespace 'com.juego.app'
+            compileSdk 35
 
-              defaultConfig {
-                  applicationId "com.mijuego.dosd"
-                  minSdk 24
-                  targetSdk 35
-                  versionCode 1
-                  versionName "1.0"
-              }
+            defaultConfig {
+              applicationId "com.juego.app"
+              minSdk 24
+              targetSdk 35
+              versionCode 1
+              versionName "1.0"
+            }
           }
-          EOF
-
-          cat > app/src/main/AndroidManifest.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-              <application
-                  android:theme="@style/Theme.MiJuego"
-                  android:label="Mi Juego 2D">
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:screenOrientation="portrait"
-                      android:exported="true">
-
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-
-                  </activity>
-
-              </application>
-
-          </manifest>
           EOF
 
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <resources>
-              <style name="Theme.MiJuego" parent="android:style/Theme.Material.Light.NoActionBar">
-                  <item name="android:windowFullscreen">true</item>
-                  <item name="android:navigationBarColor">#111827</item>
-              </style>
+            <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+              <item name="android:windowFullscreen">true</item>
+            </style>
           </resources>
           EOF
 
-          cat > app/src/main/java/com/mijuego/dosd/MainActivity.java <<'EOF'
-          package com.mijuego.dosd;
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application android:theme="@style/AppTheme" android:label="Mi Juego 2D">
+              <activity
+                android:name=".MainActivity"
+                android:screenOrientation="portrait"
+                android:exported="true">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.LAUNCHER"/>
+                </intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          EOF
 
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.view.Window;
-          import android.view.WindowManager;
+          cat > app/src/main/java/com/juego/app/MainActivity.java <<'EOF'
+          package com.juego.app;
+
+          import android.app.*;
+          import android.os.*;
+          import android.view.*;
+          import android.graphics.*;
+          import java.util.*;
 
           public class MainActivity extends Activity {
 
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
+            public void onCreate(Bundle b) {
+              super.onCreate(b);
+              setContentView(new Juego(this));
+            }
 
-                  requestWindowFeature(Window.FEATURE_NO_TITLE);
+            static class Juego extends View {
 
-                  getWindow().setFlags(
-                      WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                      WindowManager.LayoutParams.FLAG_FULLSCREEN
-                  );
+              Paint p=new Paint(1);
+              Random r=new Random();
 
-                  setContentView(new GameView(this));
-              }
-          }
-          EOF
+              float x=100,y=350;
+              float monedaX=500,monedaY=300;
+              int puntos=0;
 
-          cat > app/src/main/java/com/mijuego/dosd/GameView.java <<'EOF'
-          package com.mijuego.dosd;
+              boolean izq,der,arr,aba;
 
-          import android.content.Context;
-          import android.graphics.Canvas;
-          import android.graphics.Color;
-          import android.graphics.Paint;
-          import android.graphics.RectF;
-          import android.view.MotionEvent;
-          import android.view.View;
+              RectF BI=new RectF();
+              RectF BD=new RectF();
+              RectF BA=new RectF();
+              RectF BB=new RectF();
 
-          import java.util.Random;
-
-          public class GameView extends View {
-
-              Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-              Random random = new Random();
-
-              float px = 100;
-              float py = 400;
-              float size = 90;
-
-              float coinX = 450;
-              float coinY = 300;
-              float coinR = 35;
-
-              int puntos = 0;
-
-              boolean izquierda;
-              boolean derecha;
-              boolean arriba;
-              boolean abajo;
-
-              RectF bIzquierda = new RectF();
-              RectF bDerecha = new RectF();
-              RectF bArriba = new RectF();
-              RectF bAbajo = new RectF();
-
-              public GameView(Context context) {
-                  super(context);
-                  setBackgroundColor(Color.rgb(17,24,39));
-              }
-
-              @Override
-              protected void onDraw
+              Juego(android.content.Context c) {
+                super(c);
