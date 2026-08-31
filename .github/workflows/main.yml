@@ -7,14 +7,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - uses: android-actions/setup-android@v3
+
+      - name: SDK Android
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -23,17 +26,14 @@ jobs:
       - name: Crear juego
         run: |
           mkdir -p app/src/main/java/com/juego/app
-          mkdir -p app/src/main/res/values
 
           cat > settings.gradle <<'EOF'
-          pluginManagement {
-            repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement {
             repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
             repositories { google(); mavenCentral() }
           }
-          rootProject.name='MiJuego2D'
+          rootProject.name='Juego'
           include ':app'
           EOF
 
@@ -45,11 +45,9 @@ jobs:
 
           cat > app/build.gradle <<'EOF'
           plugins { id 'com.android.application' }
-
           android {
             namespace 'com.juego.app'
             compileSdk 35
-
             defaultConfig {
               applicationId "com.juego.app"
               minSdk 24
@@ -60,21 +58,10 @@ jobs:
           }
           EOF
 
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <resources>
-            <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-              <item name="android:windowFullscreen">true</item>
-            </style>
-          </resources>
-          EOF
-
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <application android:theme="@style/AppTheme" android:label="Mi Juego 2D">
-              <activity
-                android:name=".MainActivity"
-                android:screenOrientation="portrait"
-                android:exported="true">
+            <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="Mi Juego 2D">
+              <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
                 <intent-filter>
                   <action android:name="android.intent.action.MAIN"/>
                   <category android:name="android.intent.category.LAUNCHER"/>
@@ -86,35 +73,30 @@ jobs:
 
           cat > app/src/main/java/com/juego/app/MainActivity.java <<'EOF'
           package com.juego.app;
-
-          import android.app.*;
-          import android.os.*;
-          import android.view.*;
-          import android.graphics.*;
-          import java.util.*;
-
+          import android.app.*; import android.os.*; import android.view.*; import android.graphics.*; import java.util.*;
           public class MainActivity extends Activity {
-
-            public void onCreate(Bundle b) {
-              super.onCreate(b);
-              setContentView(new Juego(this));
-            }
-
+            public void onCreate(Bundle b){super.onCreate(b);setContentView(new Juego(this));}
             static class Juego extends View {
+              Paint p=new Paint(1); Random r=new Random(); float x=100,y=350,cx=500,cy=400; int pts=0;
+              Juego(android.content.Context c){super(c);}
+              protected void onDraw(Canvas c){
+                c.drawColor(Color.rgb(20,25,35)); p.setTextSize(45); p.setColor(Color.WHITE); c.drawText("Mi Juego 2D",30,60,p);
+                p.setTextSize(32); c.drawText("Puntos: "+pts,30,110,p);
+                p.setColor(Color.BLUE); c.drawRect(x,y,x+90,y+90,p);
+                p.setColor(Color.YELLOW); c.drawCircle(cx,cy,35,p);
+                if(Math.abs(x+45-cx)<70&&Math.abs(y+45-cy)<70){pts++;cx=50+r.nextFloat()*Math.max(1,getWidth()-100);cy=150+r.nextFloat()*Math.max(1,getHeight()-220);}
+                postInvalidateOnAnimation();
+              }
+              public boolean onTouchEvent(MotionEvent e){if(e.getAction()!=1){x=e.getX()-45;y=e.getY()-45;}return true;}
+            }
+          }
+          EOF
 
-              Paint p=new Paint(1);
-              Random r=new Random();
+      - name: Compilar APK
+        run: gradle assembleDebug
 
-              float x=100,y=350;
-              float monedaX=500,monedaY=300;
-              int puntos=0;
-
-              boolean izq,der,arr,aba;
-
-              RectF BI=new RectF();
-              RectF BD=new RectF();
-              RectF BA=new RectF();
-              RectF BB=new RectF();
-
-              Juego(android.content.Context c) {
-                super(c);
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mi-Juego-2D-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
