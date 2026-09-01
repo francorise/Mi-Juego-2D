@@ -60,8 +60,8 @@ jobs:
               applicationId "com.juego.app"
               minSdk 24
               targetSdk 35
-              versionCode 3
-              versionName "1.2"
+              versionCode 4
+              versionName "1.3"
             }
           }
           EOF
@@ -99,7 +99,12 @@ jobs:
           import android.view.*;
           import android.widget.*;
           import android.content.Context;
+          import android.content.SharedPreferences;
+
           import java.util.Random;
+          import java.util.ArrayList;
+          import java.util.Collections;
+          import java.util.Comparator;
 
           public class MainActivity extends Activity {
 
@@ -111,61 +116,500 @@ jobs:
               mostrarMenu();
             }
 
+            TextView crearTexto(
+              String texto,
+              float tamano,
+              int color
+            ) {
+
+              TextView t = new TextView(this);
+              t.setText(texto);
+              t.setTextSize(tamano);
+              t.setTextColor(color);
+              t.setGravity(Gravity.CENTER);
+              t.setPadding(10,20,10,20);
+
+              return t;
+            }
+
+            Button crearBoton(String texto) {
+
+              Button b = new Button(this);
+              b.setText(texto);
+              b.setTextSize(22);
+
+              LinearLayout.LayoutParams lp =
+                new LinearLayout.LayoutParams(
+                  LinearLayout.LayoutParams.MATCH_PARENT,
+                  LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+
+              lp.setMargins(0,15,0,15);
+              b.setLayoutParams(lp);
+
+              return b;
+            }
+
+            LinearLayout crearPantalla() {
+
+              LinearLayout pantalla =
+                new LinearLayout(this);
+
+              pantalla.setOrientation(
+                LinearLayout.VERTICAL
+              );
+
+              pantalla.setGravity(
+                Gravity.CENTER
+              );
+
+              pantalla.setPadding(
+                50,50,50,50
+              );
+
+              pantalla.setBackgroundColor(
+                Color.rgb(20,25,35)
+              );
+
+              return pantalla;
+            }
+
             void mostrarMenu() {
 
-              LinearLayout menu = new LinearLayout(this);
-              menu.setOrientation(LinearLayout.VERTICAL);
-              menu.setGravity(Gravity.CENTER);
-              menu.setPadding(60,60,60,60);
-              menu.setBackgroundColor(Color.rgb(20,25,35));
+              LinearLayout menu =
+                crearPantalla();
 
-              TextView titulo = new TextView(this);
-              titulo.setText("MI JUEGO 2D");
-              titulo.setTextSize(36);
-              titulo.setTextColor(Color.WHITE);
-              titulo.setGravity(Gravity.CENTER);
+              TextView titulo =
+                crearTexto(
+                  "MI JUEGO 2D",
+                  36,
+                  Color.WHITE
+                );
 
-              TextView texto = new TextView(this);
-              texto.setText("Ingresa tu nombre");
-              texto.setTextSize(20);
-              texto.setTextColor(Color.LTGRAY);
-              texto.setGravity(Gravity.CENTER);
+              TextView texto =
+                crearTexto(
+                  "Ingresa tu nombre",
+                  20,
+                  Color.LTGRAY
+                );
 
-              EditText nombre = new EditText(this);
-              nombre.setHint("Nombre del jugador");
-              nombre.setTextColor(Color.WHITE);
-              nombre.setHintTextColor(Color.GRAY);
+              EditText nombre =
+                new EditText(this);
+
+              nombre.setHint(
+                "Nombre del jugador"
+              );
+
+              nombre.setTextColor(
+                Color.WHITE
+              );
+
+              nombre.setHintTextColor(
+                Color.GRAY
+              );
+
+              nombre.setTextSize(20);
               nombre.setSingleLine(true);
 
-              Button start = new Button(this);
-              start.setText("START");
-              start.setTextSize(24);
+              Button start =
+                crearBoton("START");
+
+              Button records =
+                crearBoton("RÉCORDS");
 
               menu.addView(titulo);
               menu.addView(texto);
               menu.addView(nombre);
               menu.addView(start);
+              menu.addView(records);
 
               setContentView(menu);
 
               start.setOnClickListener(v -> {
 
-                String n = nombre.getText().toString().trim();
+                String n =
+                  nombre
+                  .getText()
+                  .toString()
+                  .trim();
 
                 if (!n.isEmpty()) {
                   nombreJugador = n;
                 }
 
-                setContentView(
-                  new Juego(this, nombreJugador)
-                );
+                iniciarJuego(nombreJugador);
               });
+
+              records.setOnClickListener(
+                v -> mostrarRecords()
+              );
             }
 
-            static class Juego extends View {
+            void iniciarJuego(
+              String nombre
+            ) {
 
-              Paint p = new Paint(1);
-              Random r = new Random();
+              nombreJugador = nombre;
+
+              setContentView(
+                new Juego(
+                  this,
+                  nombre
+                )
+              );
+            }
+
+            void mostrarGameOver(
+              String nombre,
+              int puntos
+            ) {
+
+              guardarRecord(
+                nombre,
+                puntos
+              );
+
+              LinearLayout pantalla =
+                crearPantalla();
+
+              TextView titulo =
+                crearTexto(
+                  "TIEMPO AGOTADO",
+                  38,
+                  Color.RED
+                );
+
+              TextView perdiste =
+                crearTexto(
+                  "PERDISTE",
+                  32,
+                  Color.WHITE
+                );
+
+              TextView jugador =
+                crearTexto(
+                  "Jugador: " + nombre,
+                  24,
+                  Color.LTGRAY
+                );
+
+              TextView puntaje =
+                crearTexto(
+                  "Puntaje final: " + puntos,
+                  30,
+                  Color.WHITE
+                );
+
+              Button reiniciar =
+                crearBoton(
+                  "REINICIAR"
+                );
+
+              Button records =
+                crearBoton(
+                  "VER RÉCORDS"
+                );
+
+              Button menu =
+                crearBoton(
+                  "MENÚ PRINCIPAL"
+                );
+
+              pantalla.addView(titulo);
+              pantalla.addView(perdiste);
+              pantalla.addView(jugador);
+              pantalla.addView(puntaje);
+              pantalla.addView(reiniciar);
+              pantalla.addView(records);
+              pantalla.addView(menu);
+
+              setContentView(pantalla);
+
+              reiniciar.setOnClickListener(
+                v -> iniciarJuego(nombre)
+              );
+
+              records.setOnClickListener(
+                v -> mostrarRecords()
+              );
+
+              menu.setOnClickListener(
+                v -> mostrarMenu()
+              );
+            }
+
+            static class Registro {
+
+              String nombre;
+              int puntos;
+
+              Registro(
+                String n,
+                int p
+              ) {
+
+                nombre = n;
+                puntos = p;
+              }
+            }
+
+            ArrayList<Registro>
+            obtenerRecords() {
+
+              SharedPreferences pref =
+                getSharedPreferences(
+                  "records",
+                  MODE_PRIVATE
+                );
+
+              String datos =
+                pref.getString(
+                  "lista",
+                  ""
+                );
+
+              ArrayList<Registro> lista =
+                new ArrayList<>();
+
+              if (!datos.isEmpty()) {
+
+                String[] filas =
+                  datos.split("\n");
+
+                for (
+                  String fila : filas
+                ) {
+
+                  String[] partes =
+                    fila.split(
+                      "\\|",
+                      2
+                    );
+
+                  if (
+                    partes.length == 2
+                  ) {
+
+                    try {
+
+                      int p =
+                        Integer.parseInt(
+                          partes[1]
+                        );
+
+                      lista.add(
+                        new Registro(
+                          partes[0],
+                          p
+                        )
+                      );
+
+                    } catch (
+                      Exception e
+                    ) {
+                    }
+                  }
+                }
+              }
+
+              Collections.sort(
+                lista,
+                new Comparator<Registro>() {
+
+                  @Override
+                  public int compare(
+                    Registro a,
+                    Registro b
+                  ) {
+
+                    return
+                      Integer.compare(
+                        b.puntos,
+                        a.puntos
+                      );
+                  }
+                }
+              );
+
+              return lista;
+            }
+
+            void guardarRecord(
+              String nombre,
+              int puntos
+            ) {
+
+              ArrayList<Registro> lista =
+                obtenerRecords();
+
+              String nombreSeguro =
+                nombre
+                .replace("|","")
+                .replace("\n"," ")
+                .trim();
+
+              if (
+                nombreSeguro.isEmpty()
+              ) {
+
+                nombreSeguro =
+                  "Jugador";
+              }
+
+              lista.add(
+                new Registro(
+                  nombreSeguro,
+                  puntos
+                )
+              );
+
+              Collections.sort(
+                lista,
+                new Comparator<Registro>() {
+
+                  @Override
+                  public int compare(
+                    Registro a,
+                    Registro b
+                  ) {
+
+                    return
+                      Integer.compare(
+                        b.puntos,
+                        a.puntos
+                      );
+                  }
+                }
+              );
+
+              while (
+                lista.size() > 10
+              ) {
+
+                lista.remove(
+                  lista.size() - 1
+                );
+              }
+
+              StringBuilder sb =
+                new StringBuilder();
+
+              for (
+                int i = 0;
+                i < lista.size();
+                i++
+              ) {
+
+                Registro r =
+                  lista.get(i);
+
+                sb.append(r.nombre)
+                  .append("|")
+                  .append(r.puntos);
+
+                if (
+                  i <
+                  lista.size() - 1
+                ) {
+
+                  sb.append("\n");
+                }
+              }
+
+              getSharedPreferences(
+                "records",
+                MODE_PRIVATE
+              )
+              .edit()
+              .putString(
+                "lista",
+                sb.toString()
+              )
+              .apply();
+            }
+
+            void mostrarRecords() {
+
+              LinearLayout pantalla =
+                crearPantalla();
+
+              TextView titulo =
+                crearTexto(
+                  "RÉCORDS",
+                  38,
+                  Color.WHITE
+                );
+
+              pantalla.addView(titulo);
+
+              ArrayList<Registro> lista =
+                obtenerRecords();
+
+              if (
+                lista.size() == 0
+              ) {
+
+                pantalla.addView(
+                  crearTexto(
+                    "Todavía no hay récords",
+                    22,
+                    Color.LTGRAY
+                  )
+                );
+
+              } else {
+
+                for (
+                  int i = 0;
+                  i < lista.size();
+                  i++
+                ) {
+
+                  Registro r =
+                    lista.get(i);
+
+                  String linea =
+                    (i + 1)
+                    + ". "
+                    + r.nombre
+                    + "  -  "
+                    + r.puntos
+                    + " puntos";
+
+                  pantalla.addView(
+                    crearTexto(
+                      linea,
+                      22,
+                      Color.WHITE
+                    )
+                  );
+                }
+              }
+
+              Button volver =
+                crearBoton(
+                  "VOLVER AL MENÚ PRINCIPAL"
+                );
+
+              pantalla.addView(volver);
+
+              setContentView(pantalla);
+
+              volver.setOnClickListener(
+                v -> mostrarMenu()
+              );
+            }
+
+            static class Juego
+              extends View {
+
+              MainActivity activity;
+
+              Paint p =
+                new Paint(1);
+
+              Random r =
+                new Random();
 
               float x = 100;
               float y = 350;
@@ -174,68 +618,183 @@ jobs:
               float objetivoY = 400;
 
               int puntos = 0;
+
               String jugador;
 
               long finTiempo;
-              boolean gameOver = false;
 
-              boolean bonusActivo = false;
+              boolean gameOver =
+                false;
+
+              boolean avisoGameOver =
+                false;
+
+              boolean bonusActivo =
+                false;
+
               float bonusX = 0;
               float bonusY = 0;
-              float velocidadBonus = 18;
+
+              float velocidadBonus =
+                18;
 
               int proximoBonus = 50;
 
-              long mensajeBonusHasta = 0;
+              long mensajeBonusHasta =
+                0;
 
-              Juego(Context c, String nombre) {
-                super(c);
+              long mensajeRojoHasta =
+                0;
 
+              static final int
+                MAX_ENEMIGOS = 8;
+
+              float[] enemigoX =
+                new float[MAX_ENEMIGOS];
+
+              float[] enemigoY =
+                new float[MAX_ENEMIGOS];
+
+              boolean enemigosCreados =
+                false;
+
+              Juego(
+                MainActivity a,
+                String nombre
+              ) {
+
+                super(a);
+
+                activity = a;
                 jugador = nombre;
 
                 finTiempo =
-                  SystemClock.uptimeMillis() + 60000;
+                  SystemClock
+                  .uptimeMillis()
+                  + 60000;
+              }
+
+              void prepararEnemigos() {
+
+                if (
+                  enemigosCreados
+                ) {
+                  return;
+                }
+
+                if (
+                  getWidth() <= 0 ||
+                  getHeight() <= 0
+                ) {
+                  return;
+                }
+
+                for (
+                  int i = 0;
+                  i < MAX_ENEMIGOS;
+                  i++
+                ) {
+
+                  moverEnemigo(i);
+                }
+
+                enemigosCreados =
+                  true;
+              }
+
+              void moverEnemigo(
+                int i
+              ) {
+
+                enemigoX[i] =
+                  45
+                  + r.nextFloat()
+                  * Math.max(
+                    1,
+                    getWidth() - 90
+                  );
+
+                enemigoY[i] =
+                  200
+                  + r.nextFloat()
+                  * Math.max(
+                    1,
+                    getHeight() - 300
+                  );
+              }
+
+              int cantidadEnemigos() {
+
+                int cantidad =
+                  1 + puntos / 20;
+
+                if (
+                  cantidad >
+                  MAX_ENEMIGOS
+                ) {
+
+                  cantidad =
+                    MAX_ENEMIGOS;
+                }
+
+                return cantidad;
               }
 
               @Override
-              protected void onDraw(Canvas c) {
+              protected void onDraw(
+                Canvas c
+              ) {
 
                 long ahora =
-                  SystemClock.uptimeMillis();
+                  SystemClock
+                  .uptimeMillis();
 
                 long restante =
                   finTiempo - ahora;
 
-                if (restante <= 0) {
+                if (
+                  restante <= 0
+                ) {
+
                   restante = 0;
                   gameOver = true;
                 }
 
                 c.drawColor(
-                  Color.rgb(20,25,35)
+                  Color.rgb(
+                    20,
+                    25,
+                    35
+                  )
                 );
 
-                p.setColor(Color.WHITE);
-                p.setTextSize(34);
+                p.setColor(
+                  Color.WHITE
+                );
+
+                p.setTextSize(32);
 
                 c.drawText(
-                  "Jugador: " + jugador,
+                  "Jugador: "
+                  + jugador,
                   30,
-                  55,
+                  50,
                   p
                 );
 
-                p.setTextSize(30);
+                p.setTextSize(29);
 
                 c.drawText(
-                  "Puntos: " + puntos,
+                  "Puntos: "
+                  + puntos,
                   30,
-                  100,
+                  95,
                   p
                 );
 
                 long segundos =
-                  (restante + 999) / 1000;
+                  (restante + 999)
+                  / 1000;
 
                 long minutos =
                   segundos / 60;
@@ -250,185 +809,294 @@ jobs:
                     seg
                   );
 
-                if (segundos <= 10) {
-                  p.setColor(Color.RED);
+                if (
+                  segundos <= 10
+                ) {
+
+                  p.setColor(
+                    Color.RED
+                  );
+
                 } else {
-                  p.setColor(Color.WHITE);
+
+                  p.setColor(
+                    Color.WHITE
+                  );
                 }
 
-                p.setTextSize(34);
+                p.setTextSize(32);
 
                 c.drawText(
-                  "Tiempo: " + tiempo,
+                  "Tiempo: "
+                  + tiempo,
                   30,
-                  145,
+                  140,
                   p
                 );
 
-                if (!gameOver) {
+                if (
+                  gameOver
+                ) {
 
-                  p.setColor(Color.BLUE);
+                  if (
+                    !avisoGameOver
+                  ) {
 
-                  c.drawRect(
-                    x,
-                    y,
-                    x + 90,
-                    y + 90,
-                    p
+                    avisoGameOver =
+                      true;
+
+                    post(() ->
+                      activity
+                      .mostrarGameOver(
+                        jugador,
+                        puntos
+                      )
+                    );
+                  }
+
+                  return;
+                }
+
+                prepararEnemigos();
+
+                p.setColor(
+                  Color.BLUE
+                );
+
+                c.drawRect(
+                  x,
+                  y,
+                  x + 90,
+                  y + 90,
+                  p
+                );
+
+                p.setColor(
+                  Color.YELLOW
+                );
+
+                c.drawCircle(
+                  objetivoX,
+                  objetivoY,
+                  35,
+                  p
+                );
+
+                if (
+                  Math.abs(
+                    x + 45
+                    - objetivoX
+                  ) < 70
+                  &&
+                  Math.abs(
+                    y + 45
+                    - objetivoY
+                  ) < 70
+                ) {
+
+                  puntos++;
+
+                  objetivoX =
+                    50
+                    + r.nextFloat()
+                    * Math.max(
+                      1,
+                      getWidth()
+                      - 100
+                    );
+
+                  objetivoY =
+                    190
+                    + r.nextFloat()
+                    * Math.max(
+                      1,
+                      getHeight()
+                      - 270
+                    );
+                }
+
+                int enemigos =
+                  cantidadEnemigos();
+
+                for (
+                  int i = 0;
+                  i < enemigos;
+                  i++
+                ) {
+
+                  p.setColor(
+                    Color.RED
                   );
 
-                  p.setColor(Color.YELLOW);
-
                   c.drawCircle(
-                    objetivoX,
-                    objetivoY,
+                    enemigoX[i],
+                    enemigoY[i],
                     35,
                     p
                   );
 
                   if (
-                    Math.abs(x + 45 - objetivoX) < 70 &&
-                    Math.abs(y + 45 - objetivoY) < 70
+                    Math.abs(
+                      x + 45
+                      - enemigoX[i]
+                    ) < 72
+                    &&
+                    Math.abs(
+                      y + 45
+                      - enemigoY[i]
+                    ) < 72
                   ) {
 
-                    puntos++;
+                    finTiempo -=
+                      5000;
 
-                    objetivoX =
-                      50 + r.nextFloat() *
-                      Math.max(
-                        1,
-                        getWidth() - 100
-                      );
+                    mensajeRojoHasta =
+                      ahora + 1000;
 
-                    objetivoY =
-                      190 + r.nextFloat() *
-                      Math.max(
-                        1,
-                        getHeight() - 270
-                      );
+                    moverEnemigo(i);
                   }
+                }
 
-                  if (
-                    puntos >= proximoBonus &&
-                    !bonusActivo
-                  ) {
+                if (
+                  puntos >=
+                  proximoBonus
+                  &&
+                  !bonusActivo
+                ) {
 
-                    bonusActivo = true;
+                  bonusActivo =
+                    true;
 
-                    bonusX =
-                      40 + r.nextFloat() *
-                      Math.max(
-                        1,
-                        getWidth() - 80
-                      );
-
-                    bonusY = 190;
-
-                    proximoBonus += 50;
-                  }
-
-                  if (bonusActivo) {
-
-                    bonusY += velocidadBonus;
-
-                    p.setColor(Color.GREEN);
-
-                    c.drawCircle(
-                      bonusX,
-                      bonusY,
-                      40,
-                      p
+                  bonusX =
+                    40
+                    + r.nextFloat()
+                    * Math.max(
+                      1,
+                      getWidth()
+                      - 80
                     );
 
-                    if (
-                      Math.abs(x + 45 - bonusX) < 80 &&
-                      Math.abs(y + 45 - bonusY) < 80
-                    ) {
+                  bonusY = 180;
 
-                      finTiempo += 30000;
+                  proximoBonus +=
+                    50;
+                }
 
-                      bonusActivo = false;
+                if (
+                  bonusActivo
+                ) {
 
-                      mensajeBonusHasta =
-                        ahora + 1500;
-                    }
+                  bonusY +=
+                    velocidadBonus;
 
-                    if (
-                      bonusY >
-                      getHeight() + 50
-                    ) {
+                  p.setColor(
+                    Color.GREEN
+                  );
 
-                      bonusActivo = false;
-                    }
-                  }
-
-                  if (
-                    ahora <
-                    mensajeBonusHasta
-                  ) {
-
-                    p.setColor(Color.GREEN);
-                    p.setTextSize(40);
-
-                    c.drawText(
-                      "+30 SEGUNDOS",
-                      30,
-                      200,
-                      p
-                    );
-                  }
-
-                  postInvalidateOnAnimation();
-
-                } else {
-
-                  p.setColor(Color.RED);
-                  p.setTextSize(50);
-
-                  c.drawText(
-                    "TIEMPO AGOTADO",
-                    30,
-                    300,
+                  c.drawCircle(
+                    bonusX,
+                    bonusY,
+                    40,
                     p
                   );
 
-                  p.setColor(Color.WHITE);
-                  p.setTextSize(42);
+                  if (
+                    Math.abs(
+                      x + 45
+                      - bonusX
+                    ) < 80
+                    &&
+                    Math.abs(
+                      y + 45
+                      - bonusY
+                    ) < 80
+                  ) {
 
-                  c.drawText(
-                    "PERDISTE",
-                    30,
-                    360,
-                    p
+                    finTiempo +=
+                      30000;
+
+                    bonusActivo =
+                      false;
+
+                    mensajeBonusHasta =
+                      ahora + 1500;
+                  }
+
+                  if (
+                    bonusY >
+                    getHeight() + 50
+                  ) {
+
+                    bonusActivo =
+                      false;
+                  }
+                }
+
+                if (
+                  ahora <
+                  mensajeBonusHasta
+                ) {
+
+                  p.setColor(
+                    Color.GREEN
                   );
 
-                  p.setTextSize(32);
+                  p.setTextSize(38);
 
                   c.drawText(
-                    "Puntaje final: " + puntos,
+                    "+30 SEGUNDOS",
                     30,
-                    420,
+                    190,
                     p
                   );
                 }
+
+                if (
+                  ahora <
+                  mensajeRojoHasta
+                ) {
+
+                  p.setColor(
+                    Color.RED
+                  );
+
+                  p.setTextSize(38);
+
+                  c.drawText(
+                    "-5 SEGUNDOS",
+                    30,
+                    235,
+                    p
+                  );
+                }
+
+                postInvalidateOnAnimation();
               }
 
               @Override
-              public boolean onTouchEvent(
+              public boolean
+              onTouchEvent(
                 MotionEvent e
               ) {
 
-                if (gameOver) {
+                if (
+                  gameOver
+                ) {
                   return true;
                 }
 
                 if (
-                  e.getAction() !=
-                  MotionEvent.ACTION_UP
+                  e.getAction()
+                  !=
+                  MotionEvent
+                  .ACTION_UP
                 ) {
 
-                  x = e.getX() - 45;
-                  y = e.getY() - 45;
+                  x =
+                    e.getX() - 45;
+
+                  y =
+                    e.getY() - 45;
                 }
 
                 return true;
