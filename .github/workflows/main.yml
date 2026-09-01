@@ -60,8 +60,8 @@ jobs:
               applicationId "com.juego.app"
               minSdk 24
               targetSdk 35
-              versionCode 4
-              versionName "1.3"
+              versionCode 5
+              versionName "1.4"
             }
           }
           EOF
@@ -84,7 +84,6 @@ jobs:
                 </intent-filter>
 
               </activity>
-
             </application>
           </manifest>
           EOF
@@ -100,6 +99,8 @@ jobs:
           import android.widget.*;
           import android.content.Context;
           import android.content.SharedPreferences;
+          import android.media.AudioManager;
+          import android.media.ToneGenerator;
 
           import java.util.Random;
           import java.util.ArrayList;
@@ -121,19 +122,16 @@ jobs:
               float tamano,
               int color
             ) {
-
               TextView t = new TextView(this);
               t.setText(texto);
               t.setTextSize(tamano);
               t.setTextColor(color);
               t.setGravity(Gravity.CENTER);
               t.setPadding(10,20,10,20);
-
               return t;
             }
 
             Button crearBoton(String texto) {
-
               Button b = new Button(this);
               b.setText(texto);
               b.setTextSize(22);
@@ -146,12 +144,10 @@ jobs:
 
               lp.setMargins(0,15,0,15);
               b.setLayoutParams(lp);
-
               return b;
             }
 
             LinearLayout crearPantalla() {
-
               LinearLayout pantalla =
                 new LinearLayout(this);
 
@@ -175,7 +171,6 @@ jobs:
             }
 
             void mostrarMenu() {
-
               LinearLayout menu =
                 crearPantalla();
 
@@ -186,11 +181,18 @@ jobs:
                   Color.WHITE
                 );
 
+              TextView subtitulo =
+                crearTexto(
+                  "1 minuto para conseguir el máximo puntaje",
+                  18,
+                  Color.LTGRAY
+                );
+
               TextView texto =
                 crearTexto(
                   "Ingresa tu nombre",
                   20,
-                  Color.LTGRAY
+                  Color.WHITE
                 );
 
               EditText nombre =
@@ -218,6 +220,7 @@ jobs:
                 crearBoton("RÉCORDS");
 
               menu.addView(titulo);
+              menu.addView(subtitulo);
               menu.addView(texto);
               menu.addView(nombre);
               menu.addView(start);
@@ -226,7 +229,6 @@ jobs:
               setContentView(menu);
 
               start.setOnClickListener(v -> {
-
                 String n =
                   nombre
                   .getText()
@@ -237,7 +239,9 @@ jobs:
                   nombreJugador = n;
                 }
 
-                iniciarJuego(nombreJugador);
+                iniciarJuego(
+                  nombreJugador
+                );
               });
 
               records.setOnClickListener(
@@ -248,7 +252,6 @@ jobs:
             void iniciarJuego(
               String nombre
             ) {
-
               nombreJugador = nombre;
 
               setContentView(
@@ -261,9 +264,9 @@ jobs:
 
             void mostrarGameOver(
               String nombre,
-              int puntos
+              int puntos,
+              int nivel
             ) {
-
               guardarRecord(
                 nombre,
                 puntos
@@ -272,33 +275,45 @@ jobs:
               LinearLayout pantalla =
                 crearPantalla();
 
-              TextView titulo =
+              pantalla.addView(
                 crearTexto(
                   "TIEMPO AGOTADO",
                   38,
                   Color.RED
-                );
+                )
+              );
 
-              TextView perdiste =
+              pantalla.addView(
                 crearTexto(
                   "PERDISTE",
-                  32,
-                  Color.WHITE
-                );
-
-              TextView jugador =
-                crearTexto(
-                  "Jugador: " + nombre,
-                  24,
-                  Color.LTGRAY
-                );
-
-              TextView puntaje =
-                crearTexto(
-                  "Puntaje final: " + puntos,
                   30,
                   Color.WHITE
-                );
+                )
+              );
+
+              pantalla.addView(
+                crearTexto(
+                  "Jugador: " + nombre,
+                  23,
+                  Color.LTGRAY
+                )
+              );
+
+              pantalla.addView(
+                crearTexto(
+                  "Puntaje: " + puntos,
+                  32,
+                  Color.WHITE
+                )
+              );
+
+              pantalla.addView(
+                crearTexto(
+                  "Nivel alcanzado: " + nivel,
+                  24,
+                  Color.WHITE
+                )
+              );
 
               Button reiniciar =
                 crearBoton(
@@ -315,15 +330,21 @@ jobs:
                   "MENÚ PRINCIPAL"
                 );
 
-              pantalla.addView(titulo);
-              pantalla.addView(perdiste);
-              pantalla.addView(jugador);
-              pantalla.addView(puntaje);
-              pantalla.addView(reiniciar);
-              pantalla.addView(records);
-              pantalla.addView(menu);
+              pantalla.addView(
+                reiniciar
+              );
 
-              setContentView(pantalla);
+              pantalla.addView(
+                records
+              );
+
+              pantalla.addView(
+                menu
+              );
+
+              setContentView(
+                pantalla
+              );
 
               reiniciar.setOnClickListener(
                 v -> iniciarJuego(nombre)
@@ -339,7 +360,6 @@ jobs:
             }
 
             static class Registro {
-
               String nombre;
               int puntos;
 
@@ -347,7 +367,6 @@ jobs:
                 String n,
                 int p
               ) {
-
                 nombre = n;
                 puntos = p;
               }
@@ -355,7 +374,6 @@ jobs:
 
             ArrayList<Registro>
             obtenerRecords() {
-
               SharedPreferences pref =
                 getSharedPreferences(
                   "records",
@@ -372,14 +390,12 @@ jobs:
                 new ArrayList<>();
 
               if (!datos.isEmpty()) {
-
                 String[] filas =
                   datos.split("\n");
 
                 for (
                   String fila : filas
                 ) {
-
                   String[] partes =
                     fila.split(
                       "\\|",
@@ -389,21 +405,15 @@ jobs:
                   if (
                     partes.length == 2
                   ) {
-
                     try {
-
-                      int p =
-                        Integer.parseInt(
-                          partes[1]
-                        );
-
                       lista.add(
                         new Registro(
                           partes[0],
-                          p
+                          Integer.parseInt(
+                            partes[1]
+                          )
                         )
                       );
-
                     } catch (
                       Exception e
                     ) {
@@ -415,18 +425,15 @@ jobs:
               Collections.sort(
                 lista,
                 new Comparator<Registro>() {
-
                   @Override
                   public int compare(
                     Registro a,
                     Registro b
                   ) {
-
-                    return
-                      Integer.compare(
-                        b.puntos,
-                        a.puntos
-                      );
+                    return Integer.compare(
+                      b.puntos,
+                      a.puntos
+                    );
                   }
                 }
               );
@@ -438,7 +445,6 @@ jobs:
               String nombre,
               int puntos
             ) {
-
               ArrayList<Registro> lista =
                 obtenerRecords();
 
@@ -451,7 +457,6 @@ jobs:
               if (
                 nombreSeguro.isEmpty()
               ) {
-
                 nombreSeguro =
                   "Jugador";
               }
@@ -466,18 +471,15 @@ jobs:
               Collections.sort(
                 lista,
                 new Comparator<Registro>() {
-
                   @Override
                   public int compare(
                     Registro a,
                     Registro b
                   ) {
-
-                    return
-                      Integer.compare(
-                        b.puntos,
-                        a.puntos
-                      );
+                    return Integer.compare(
+                      b.puntos,
+                      a.puntos
+                    );
                   }
                 }
               );
@@ -485,7 +487,6 @@ jobs:
               while (
                 lista.size() > 10
               ) {
-
                 lista.remove(
                   lista.size() - 1
                 );
@@ -499,7 +500,6 @@ jobs:
                 i < lista.size();
                 i++
               ) {
-
                 Registro r =
                   lista.get(i);
 
@@ -508,10 +508,8 @@ jobs:
                   .append(r.puntos);
 
                 if (
-                  i <
-                  lista.size() - 1
+                  i < lista.size() - 1
                 ) {
-
                   sb.append("\n");
                 }
               }
@@ -529,18 +527,16 @@ jobs:
             }
 
             void mostrarRecords() {
-
               LinearLayout pantalla =
                 crearPantalla();
 
-              TextView titulo =
+              pantalla.addView(
                 crearTexto(
-                  "RÉCORDS",
+                  "🏆 RÉCORDS",
                   38,
                   Color.WHITE
-                );
-
-              pantalla.addView(titulo);
+                )
+              );
 
               ArrayList<Registro> lista =
                 obtenerRecords();
@@ -548,7 +544,6 @@ jobs:
               if (
                 lista.size() == 0
               ) {
-
                 pantalla.addView(
                   crearTexto(
                     "Todavía no hay récords",
@@ -556,29 +551,23 @@ jobs:
                     Color.LTGRAY
                   )
                 );
-
               } else {
-
                 for (
                   int i = 0;
                   i < lista.size();
                   i++
                 ) {
-
                   Registro r =
                     lista.get(i);
 
-                  String linea =
-                    (i + 1)
-                    + ". "
-                    + r.nombre
-                    + "  -  "
-                    + r.puntos
-                    + " puntos";
-
                   pantalla.addView(
                     crearTexto(
-                      linea,
+                      (i + 1)
+                      + ". "
+                      + r.nombre
+                      + "  -  "
+                      + r.puntos
+                      + " puntos",
                       22,
                       Color.WHITE
                     )
@@ -591,9 +580,13 @@ jobs:
                   "VOLVER AL MENÚ PRINCIPAL"
                 );
 
-              pantalla.addView(volver);
+              pantalla.addView(
+                volver
+              );
 
-              setContentView(pantalla);
+              setContentView(
+                pantalla
+              );
 
               volver.setOnClickListener(
                 v -> mostrarMenu()
@@ -611,6 +604,12 @@ jobs:
               Random r =
                 new Random();
 
+              ToneGenerator sonido =
+                new ToneGenerator(
+                  AudioManager.STREAM_MUSIC,
+                  70
+                );
+
               float x = 100;
               float y = 350;
 
@@ -618,16 +617,35 @@ jobs:
               float objetivoY = 400;
 
               int puntos = 0;
+              int nivel = 1;
 
               String jugador;
 
-              long finTiempo;
+              long finTiempo = 0;
 
               boolean gameOver =
                 false;
 
               boolean avisoGameOver =
                 false;
+
+              boolean cuentaRegresiva =
+                true;
+
+              long cuentaInicio;
+
+              int estadoCuentaAnterior =
+                -99;
+
+              boolean pausado =
+                false;
+
+              long pausaInicio = 0;
+
+              int racha = 0;
+              int multiplicador = 1;
+
+              long ultimoAmarillo = 0;
 
               boolean bonusActivo =
                 false;
@@ -646,6 +664,27 @@ jobs:
               long mensajeRojoHasta =
                 0;
 
+              long mensajeNivelHasta =
+                0;
+
+              boolean escudoVisible =
+                false;
+
+              float escudoX = 0;
+              float escudoY = 0;
+
+              long escudoVisibleHasta =
+                0;
+
+              long escudoHasta =
+                0;
+
+              long mensajeEscudoHasta =
+                0;
+
+              int proximoEscudo =
+                75;
+
               static final int
                 MAX_ENEMIGOS = 8;
 
@@ -662,28 +701,37 @@ jobs:
                 MainActivity a,
                 String nombre
               ) {
-
                 super(a);
 
                 activity = a;
                 jugador = nombre;
 
-                finTiempo =
+                cuentaInicio =
                   SystemClock
-                  .uptimeMillis()
-                  + 60000;
+                  .uptimeMillis();
+              }
+
+              void beep(
+                int tipo,
+                int duracion
+              ) {
+                try {
+                  sonido.startTone(
+                    tipo,
+                    duracion
+                  );
+                } catch (
+                  Exception e
+                ) {
+                }
               }
 
               void prepararEnemigos() {
-
                 if (
                   enemigosCreados
-                ) {
-                  return;
-                }
-
-                if (
-                  getWidth() <= 0 ||
+                  ||
+                  getWidth() <= 0
+                  ||
                   getHeight() <= 0
                 ) {
                   return;
@@ -694,18 +742,15 @@ jobs:
                   i < MAX_ENEMIGOS;
                   i++
                 ) {
-
                   moverEnemigo(i);
                 }
 
-                enemigosCreados =
-                  true;
+                enemigosCreados = true;
               }
 
               void moverEnemigo(
                 int i
               ) {
-
                 enemigoX[i] =
                   45
                   + r.nextFloat()
@@ -715,16 +760,15 @@ jobs:
                   );
 
                 enemigoY[i] =
-                  200
+                  220
                   + r.nextFloat()
                   * Math.max(
                     1,
-                    getHeight() - 300
+                    getHeight() - 330
                   );
               }
 
               int cantidadEnemigos() {
-
                 int cantidad =
                   1 + puntos / 20;
 
@@ -732,7 +776,6 @@ jobs:
                   cantidad >
                   MAX_ENEMIGOS
                 ) {
-
                   cantidad =
                     MAX_ENEMIGOS;
                 }
@@ -740,55 +783,217 @@ jobs:
                 return cantidad;
               }
 
-              @Override
-              protected void onDraw(
-                Canvas c
+              void moverObjetivo() {
+                objetivoX =
+                  50
+                  + r.nextFloat()
+                  * Math.max(
+                    1,
+                    getWidth() - 100
+                  );
+
+                objetivoY =
+                  220
+                  + r.nextFloat()
+                  * Math.max(
+                    1,
+                    getHeight() - 310
+                  );
+              }
+
+              void generarEscudo(
+                long ahora
               ) {
+                escudoVisible = true;
+
+                escudoX =
+                  45
+                  + r.nextFloat()
+                  * Math.max(
+                    1,
+                    getWidth() - 90
+                  );
+
+                escudoY =
+                  230
+                  + r.nextFloat()
+                  * Math.max(
+                    1,
+                    getHeight() - 330
+                  );
+
+                escudoVisibleHasta =
+                  ahora + 8000;
+
+                proximoEscudo += 75;
+              }
+
+              boolean escudoActivo(
+                long ahora
+              ) {
+                return ahora <
+                  escudoHasta;
+              }
+
+              void alternarPausa() {
+                if (
+                  cuentaRegresiva
+                  ||
+                  gameOver
+                ) {
+                  return;
+                }
 
                 long ahora =
                   SystemClock
                   .uptimeMillis();
 
-                long restante =
-                  finTiempo - ahora;
+                if (!pausado) {
+                  pausado = true;
+                  pausaInicio = ahora;
 
-                if (
-                  restante <= 0
-                ) {
+                  beep(
+                    ToneGenerator.TONE_PROP_BEEP,
+                    80
+                  );
 
-                  restante = 0;
-                  gameOver = true;
+                } else {
+                  long diferencia =
+                    ahora - pausaInicio;
+
+                  finTiempo += diferencia;
+
+                  if (
+                    ultimoAmarillo > 0
+                  ) {
+                    ultimoAmarillo +=
+                      diferencia;
+                  }
+
+                  if (
+                    escudoHasta > 0
+                  ) {
+                    escudoHasta +=
+                      diferencia;
+                  }
+
+                  if (
+                    escudoVisibleHasta > 0
+                  ) {
+                    escudoVisibleHasta +=
+                      diferencia;
+                  }
+
+                  mensajeBonusHasta +=
+                    diferencia;
+
+                  mensajeRojoHasta +=
+                    diferencia;
+
+                  mensajeNivelHasta +=
+                    diferencia;
+
+                  mensajeEscudoHasta +=
+                    diferencia;
+
+                  pausado = false;
+
+                  beep(
+                    ToneGenerator.TONE_PROP_BEEP2,
+                    80
+                  );
                 }
 
-                c.drawColor(
+                invalidate();
+              }
+
+              boolean tocaPausa(
+                float tx,
+                float ty
+              ) {
+                return
+                  tx >=
+                  getWidth() - 220
+                  &&
+                  ty >= 15
+                  &&
+                  ty <= 105;
+              }
+
+              void dibujarBotonPausa(
+                Canvas c
+              ) {
+                float izquierda =
+                  Math.max(
+                    10,
+                    getWidth() - 220
+                  );
+
+                p.setColor(
                   Color.rgb(
-                    20,
-                    25,
-                    35
+                    55,
+                    65,
+                    80
                   )
+                );
+
+                c.drawRoundRect(
+                  izquierda,
+                  20,
+                  getWidth() - 20,
+                  95,
+                  18,
+                  18,
+                  p
                 );
 
                 p.setColor(
                   Color.WHITE
                 );
 
-                p.setTextSize(32);
+                p.setTextSize(27);
 
                 c.drawText(
-                  "Jugador: "
-                  + jugador,
-                  30,
-                  50,
+                  pausado
+                    ? "SEGUIR"
+                    : "PAUSA",
+                  izquierda + 30,
+                  70,
+                  p
+                );
+              }
+
+              void dibujarCabecera(
+                Canvas c,
+                long restante,
+                long referencia
+              ) {
+                p.setColor(
+                  Color.WHITE
+                );
+
+                p.setTextSize(30);
+
+                c.drawText(
+                  "Jugador: " + jugador,
+                  25,
+                  45,
                   p
                 );
 
-                p.setTextSize(29);
+                p.setTextSize(27);
 
                 c.drawText(
-                  "Puntos: "
-                  + puntos,
-                  30,
-                  95,
+                  "Puntos: " + puntos,
+                  25,
+                  85,
+                  p
+                );
+
+                c.drawText(
+                  "Nivel: " + nivel,
+                  25,
+                  125,
                   p
                 );
 
@@ -812,44 +1017,261 @@ jobs:
                 if (
                   segundos <= 10
                 ) {
-
                   p.setColor(
                     Color.RED
                   );
-
                 } else {
-
                   p.setColor(
                     Color.WHITE
                   );
                 }
 
-                p.setTextSize(32);
+                p.setTextSize(30);
 
                 c.drawText(
-                  "Tiempo: "
-                  + tiempo,
-                  30,
-                  140,
+                  "Tiempo: " + tiempo,
+                  25,
+                  165,
                   p
+                );
+
+                if (
+                  multiplicador > 1
+                ) {
+                  p.setColor(
+                    Color.YELLOW
+                  );
+
+                  p.setTextSize(27);
+
+                  c.drawText(
+                    "COMBO x"
+                    + multiplicador,
+                    25,
+                    205,
+                    p
+                  );
+                }
+
+                if (
+                  escudoActivo(
+                    referencia
+                  )
+                ) {
+                  long restanteEscudo =
+                    Math.max(
+                      0,
+                      (
+                        escudoHasta
+                        - referencia
+                      )
+                      / 1000
+                    );
+
+                  p.setColor(
+                    Color.CYAN
+                  );
+
+                  p.setTextSize(25);
+
+                  c.drawText(
+                    "ESCUDO: "
+                    + restanteEscudo
+                    + "s",
+                    25,
+                    240,
+                    p
+                  );
+                }
+              }
+
+              void dibujarCuenta(
+                Canvas c,
+                long ahora
+              ) {
+                long transcurrido =
+                  ahora - cuentaInicio;
+
+                String texto;
+                int estado;
+
+                if (
+                  transcurrido < 1000
+                ) {
+                  texto = "3";
+                  estado = 3;
+
+                } else if (
+                  transcurrido < 2000
+                ) {
+                  texto = "2";
+                  estado = 2;
+
+                } else if (
+                  transcurrido < 3000
+                ) {
+                  texto = "1";
+                  estado = 1;
+
+                } else if (
+                  transcurrido < 3800
+                ) {
+                  texto = "¡YA!";
+                  estado = 0;
+
+                } else {
+                  cuentaRegresiva =
+                    false;
+
+                  finTiempo =
+                    ahora + 60000;
+
+                  beep(
+                    ToneGenerator.TONE_PROP_ACK,
+                    120
+                  );
+
+                  postInvalidateOnAnimation();
+                  return;
+                }
+
+                if (
+                  estado !=
+                  estadoCuentaAnterior
+                ) {
+                  estadoCuentaAnterior =
+                    estado;
+
+                  beep(
+                    estado == 0
+                      ? ToneGenerator.TONE_PROP_ACK
+                      : ToneGenerator.TONE_PROP_BEEP,
+                    100
+                  );
+                }
+
+                p.setColor(
+                  Color.WHITE
+                );
+
+                p.setTextSize(
+                  estado == 0
+                    ? 75
+                    : 110
+                );
+
+                p.setTextAlign(
+                  Paint.Align.CENTER
+                );
+
+                c.drawText(
+                  texto,
+                  getWidth() / 2f,
+                  getHeight() / 2f,
+                  p
+                );
+
+                p.setTextAlign(
+                  Paint.Align.LEFT
+                );
+
+                postInvalidateOnAnimation();
+              }
+
+              @Override
+              protected void onDraw(
+                Canvas c
+              ) {
+                long ahora =
+                  SystemClock
+                  .uptimeMillis();
+
+                c.drawColor(
+                  Color.rgb(
+                    20,
+                    25,
+                    35
+                  )
+                );
+
+                if (
+                  cuentaRegresiva
+                ) {
+                  p.setColor(
+                    Color.WHITE
+                  );
+
+                  p.setTextSize(30);
+
+                  c.drawText(
+                    "Prepárate, "
+                    + jugador,
+                    30,
+                    70,
+                    p
+                  );
+
+                  dibujarCuenta(
+                    c,
+                    ahora
+                  );
+
+                  return;
+                }
+
+                long referencia =
+                  pausado
+                    ? pausaInicio
+                    : ahora;
+
+                long restante =
+                  finTiempo
+                  - referencia;
+
+                if (
+                  restante <= 0
+                ) {
+                  restante = 0;
+                  gameOver = true;
+                }
+
+                dibujarCabecera(
+                  c,
+                  restante,
+                  referencia
+                );
+
+                dibujarBotonPausa(
+                  c
                 );
 
                 if (
                   gameOver
                 ) {
-
                   if (
                     !avisoGameOver
                   ) {
-
                     avisoGameOver =
                       true;
+
+                    beep(
+                      ToneGenerator.TONE_PROP_NACK,
+                      500
+                    );
+
+                    try {
+                      sonido.release();
+                    } catch (
+                      Exception e
+                    ) {
+                    }
 
                     post(() ->
                       activity
                       .mostrarGameOver(
                         jugador,
-                        puntos
+                        puntos,
+                        nivel
                       )
                     );
                   }
@@ -857,10 +1279,78 @@ jobs:
                   return;
                 }
 
+                if (
+                  pausado
+                ) {
+                  p.setColor(
+                    Color.argb(
+                      190,
+                      0,
+                      0,
+                      0
+                    )
+                  );
+
+                  c.drawRect(
+                    0,
+                    110,
+                    getWidth(),
+                    getHeight(),
+                    p
+                  );
+
+                  p.setColor(
+                    Color.WHITE
+                  );
+
+                  p.setTextSize(65);
+
+                  p.setTextAlign(
+                    Paint.Align.CENTER
+                  );
+
+                  c.drawText(
+                    "PAUSA",
+                    getWidth() / 2f,
+                    getHeight() / 2f,
+                    p
+                  );
+
+                  p.setTextSize(24);
+
+                  c.drawText(
+                    "Toca SEGUIR para continuar",
+                    getWidth() / 2f,
+                    getHeight() / 2f + 55,
+                    p
+                  );
+
+                  p.setTextAlign(
+                    Paint.Align.LEFT
+                  );
+
+                  return;
+                }
+
                 prepararEnemigos();
 
+                if (
+                  multiplicador > 1
+                  &&
+                  ultimoAmarillo > 0
+                  &&
+                  ahora
+                  - ultimoAmarillo
+                  > 2000
+                ) {
+                  racha = 0;
+                  multiplicador = 1;
+                }
+
                 p.setColor(
-                  Color.BLUE
+                  escudoActivo(ahora)
+                    ? Color.CYAN
+                    : Color.BLUE
                 );
 
                 c.drawRect(
@@ -893,26 +1383,60 @@ jobs:
                     - objetivoY
                   ) < 70
                 ) {
+                  if (
+                    ultimoAmarillo > 0
+                    &&
+                    ahora
+                    - ultimoAmarillo
+                    <= 2000
+                  ) {
+                    racha++;
+                  } else {
+                    racha = 1;
+                  }
 
-                  puntos++;
+                  if (
+                    racha >= 5
+                  ) {
+                    multiplicador = 3;
+                  } else if (
+                    racha >= 2
+                  ) {
+                    multiplicador = 2;
+                  } else {
+                    multiplicador = 1;
+                  }
 
-                  objetivoX =
-                    50
-                    + r.nextFloat()
-                    * Math.max(
-                      1,
-                      getWidth()
-                      - 100
+                  puntos +=
+                    multiplicador;
+
+                  ultimoAmarillo =
+                    ahora;
+
+                  beep(
+                    ToneGenerator.TONE_PROP_BEEP,
+                    60
+                  );
+
+                  int nuevoNivel =
+                    1 + puntos / 100;
+
+                  if (
+                    nuevoNivel > nivel
+                  ) {
+                    nivel =
+                      nuevoNivel;
+
+                    mensajeNivelHasta =
+                      ahora + 1800;
+
+                    beep(
+                      ToneGenerator.TONE_PROP_ACK,
+                      250
                     );
+                  }
 
-                  objetivoY =
-                    190
-                    + r.nextFloat()
-                    * Math.max(
-                      1,
-                      getHeight()
-                      - 270
-                    );
+                  moverObjetivo();
                 }
 
                 int enemigos =
@@ -923,7 +1447,6 @@ jobs:
                   i < enemigos;
                   i++
                 ) {
-
                   p.setColor(
                     Color.RED
                   );
@@ -946,12 +1469,31 @@ jobs:
                       - enemigoY[i]
                     ) < 72
                   ) {
+                    if (
+                      escudoActivo(
+                        ahora
+                      )
+                    ) {
+                      mensajeEscudoHasta =
+                        ahora + 900;
 
-                    finTiempo -=
-                      5000;
+                      beep(
+                        ToneGenerator.TONE_PROP_BEEP2,
+                        80
+                      );
 
-                    mensajeRojoHasta =
-                      ahora + 1000;
+                    } else {
+                      finTiempo -=
+                        5000;
+
+                      mensajeRojoHasta =
+                        ahora + 1000;
+
+                      beep(
+                        ToneGenerator.TONE_PROP_NACK,
+                        120
+                      );
+                    }
 
                     moverEnemigo(i);
                   }
@@ -963,7 +1505,6 @@ jobs:
                   &&
                   !bonusActivo
                 ) {
-
                   bonusActivo =
                     true;
 
@@ -972,11 +1513,10 @@ jobs:
                     + r.nextFloat()
                     * Math.max(
                       1,
-                      getWidth()
-                      - 80
+                      getWidth() - 80
                     );
 
-                  bonusY = 180;
+                  bonusY = 200;
 
                   proximoBonus +=
                     50;
@@ -985,7 +1525,6 @@ jobs:
                 if (
                   bonusActivo
                 ) {
-
                   bonusY +=
                     velocidadBonus;
 
@@ -1011,7 +1550,6 @@ jobs:
                       - bonusY
                     ) < 80
                   ) {
-
                     finTiempo +=
                       30000;
 
@@ -1020,15 +1558,101 @@ jobs:
 
                     mensajeBonusHasta =
                       ahora + 1500;
+
+                    beep(
+                      ToneGenerator.TONE_PROP_ACK,
+                      180
+                    );
                   }
 
                   if (
                     bonusY >
                     getHeight() + 50
                   ) {
-
                     bonusActivo =
                       false;
+                  }
+                }
+
+                if (
+                  puntos >=
+                  proximoEscudo
+                  &&
+                  !escudoVisible
+                ) {
+                  generarEscudo(
+                    ahora
+                  );
+                }
+
+                if (
+                  escudoVisible
+                ) {
+                  if (
+                    ahora >
+                    escudoVisibleHasta
+                  ) {
+                    escudoVisible =
+                      false;
+
+                  } else {
+                    p.setColor(
+                      Color.CYAN
+                    );
+
+                    c.drawCircle(
+                      escudoX,
+                      escudoY,
+                      42,
+                      p
+                    );
+
+                    p.setColor(
+                      Color.WHITE
+                    );
+
+                    p.setTextSize(30);
+
+                    p.setTextAlign(
+                      Paint.Align.CENTER
+                    );
+
+                    c.drawText(
+                      "S",
+                      escudoX,
+                      escudoY + 10,
+                      p
+                    );
+
+                    p.setTextAlign(
+                      Paint.Align.LEFT
+                    );
+
+                    if (
+                      Math.abs(
+                        x + 45
+                        - escudoX
+                      ) < 82
+                      &&
+                      Math.abs(
+                        y + 45
+                        - escudoY
+                      ) < 82
+                    ) {
+                      escudoVisible =
+                        false;
+
+                      escudoHasta =
+                        ahora + 10000;
+
+                      mensajeEscudoHasta =
+                        ahora + 1500;
+
+                      beep(
+                        ToneGenerator.TONE_PROP_BEEP2,
+                        250
+                      );
+                    }
                   }
                 }
 
@@ -1036,7 +1660,6 @@ jobs:
                   ahora <
                   mensajeBonusHasta
                 ) {
-
                   p.setColor(
                     Color.GREEN
                   );
@@ -1046,7 +1669,7 @@ jobs:
                   c.drawText(
                     "+30 SEGUNDOS",
                     30,
-                    190,
+                    285,
                     p
                   );
                 }
@@ -1055,7 +1678,6 @@ jobs:
                   ahora <
                   mensajeRojoHasta
                 ) {
-
                   p.setColor(
                     Color.RED
                   );
@@ -1065,8 +1687,56 @@ jobs:
                   c.drawText(
                     "-5 SEGUNDOS",
                     30,
-                    235,
+                    330,
                     p
+                  );
+                }
+
+                if (
+                  ahora <
+                  mensajeEscudoHasta
+                ) {
+                  p.setColor(
+                    Color.CYAN
+                  );
+
+                  p.setTextSize(36);
+
+                  c.drawText(
+                    escudoActivo(ahora)
+                      ? "¡ESCUDO ACTIVADO!"
+                      : "¡ESCUDO TE PROTEGIÓ!",
+                    30,
+                    375,
+                    p
+                  );
+                }
+
+                if (
+                  ahora <
+                  mensajeNivelHasta
+                ) {
+                  p.setColor(
+                    Color.YELLOW
+                  );
+
+                  p.setTextSize(45);
+
+                  p.setTextAlign(
+                    Paint.Align.CENTER
+                  );
+
+                  c.drawText(
+                    "¡NIVEL "
+                    + nivel
+                    + "!",
+                    getWidth() / 2f,
+                    getHeight() / 2f,
+                    p
+                  );
+
+                  p.setTextAlign(
+                    Paint.Align.LEFT
                   );
                 }
 
@@ -1078,9 +1748,26 @@ jobs:
               onTouchEvent(
                 MotionEvent e
               ) {
+                if (
+                  e.getAction()
+                  ==
+                  MotionEvent.ACTION_DOWN
+                  &&
+                  tocaPausa(
+                    e.getX(),
+                    e.getY()
+                  )
+                ) {
+                  alternarPausa();
+                  return true;
+                }
 
                 if (
                   gameOver
+                  ||
+                  pausado
+                  ||
+                  cuentaRegresiva
                 ) {
                   return true;
                 }
@@ -1088,10 +1775,8 @@ jobs:
                 if (
                   e.getAction()
                   !=
-                  MotionEvent
-                  .ACTION_UP
+                  MotionEvent.ACTION_UP
                 ) {
-
                   x =
                     e.getX() - 45;
 
