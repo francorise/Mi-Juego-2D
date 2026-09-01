@@ -1,5 +1,206 @@
-                  cx = 50 + r.nextFloat()*Math.max(1,getWidth()-100);
-                  cy = 190 + r.nextFloat()*Math.max(1,getHeight()-260);
+name: Crear APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Instalar Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Crear juego
+        run: |
+          mkdir -p app/src/main/java/com/juego/app
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+            repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories { google(); mavenCentral() }
+          }
+          rootProject.name='MiJuego2D'
+          include ':app'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+            id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+            id 'com.android.application'
+          }
+
+          android {
+            namespace 'com.juego.app'
+            compileSdk 35
+
+            defaultConfig {
+              applicationId "com.juego.app"
+              minSdk 24
+              targetSdk 35
+              versionCode 2
+              versionName "1.1"
+            }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application
+              android:theme="@android:style/Theme.Material.Light.NoActionBar"
+              android:label="Mi Juego 2D">
+
+              <activity
+                android:name=".MainActivity"
+                android:screenOrientation="portrait"
+                android:exported="true">
+
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.LAUNCHER"/>
+                </intent-filter>
+
+              </activity>
+            </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/juego/app/MainActivity.java <<'EOF'
+          package com.juego.app;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.graphics.*;
+          import android.view.*;
+          import android.widget.*;
+          import android.content.Context;
+          import java.util.Random;
+
+          public class MainActivity extends Activity {
+
+            String nombreJugador = "Jugador";
+
+            @Override
+            public void onCreate(Bundle b) {
+              super.onCreate(b);
+              mostrarMenu();
+            }
+
+            void mostrarMenu() {
+              LinearLayout menu = new LinearLayout(this);
+              menu.setOrientation(LinearLayout.VERTICAL);
+              menu.setGravity(Gravity.CENTER);
+              menu.setPadding(60,60,60,60);
+              menu.setBackgroundColor(Color.rgb(20,25,35));
+
+              TextView titulo = new TextView(this);
+              titulo.setText("MI JUEGO 2D");
+              titulo.setTextSize(36);
+              titulo.setTextColor(Color.WHITE);
+              titulo.setGravity(Gravity.CENTER);
+
+              TextView texto = new TextView(this);
+              texto.setText("Ingresa tu nombre");
+              texto.setTextSize(20);
+              texto.setTextColor(Color.LTGRAY);
+              texto.setGravity(Gravity.CENTER);
+
+              EditText nombre = new EditText(this);
+              nombre.setHint("Nombre del jugador");
+              nombre.setTextColor(Color.WHITE);
+              nombre.setHintTextColor(Color.GRAY);
+              nombre.setSingleLine(true);
+
+              Button start = new Button(this);
+              start.setText("START");
+              start.setTextSize(24);
+
+              menu.addView(titulo);
+              menu.addView(texto);
+              menu.addView(nombre);
+              menu.addView(start);
+
+              setContentView(menu);
+
+              start.setOnClickListener(v -> {
+                String n = nombre.getText().toString().trim();
+
+                if (!n.isEmpty()) {
+                  nombreJugador = n;
+                }
+
+                setContentView(new Juego(this, nombreJugador));
+              });
+            }
+
+            static class Juego extends View {
+
+              Paint p = new Paint(1);
+              Random r = new Random();
+
+              float x = 100;
+              float y = 350;
+              float objetivoX = 500;
+              float objetivoY = 400;
+
+              int puntos = 0;
+              String jugador;
+
+              Juego(Context c, String nombre) {
+                super(c);
+                jugador = nombre;
+              }
+
+              @Override
+              protected void onDraw(Canvas c) {
+                c.drawColor(Color.rgb(20,25,35));
+
+                p.setColor(Color.WHITE);
+                p.setTextSize(36);
+                c.drawText("Jugador: " + jugador,30,60,p);
+
+                p.setTextSize(30);
+                c.drawText("Puntos: " + puntos,30,105,p);
+
+                p.setColor(Color.BLUE);
+                c.drawRect(x,y,x+90,y+90,p);
+
+                p.setColor(Color.YELLOW);
+                c.drawCircle(objetivoX,objetivoY,35,p);
+
+                if (
+                  Math.abs(x+45-objetivoX) < 70 &&
+                  Math.abs(y+45-objetivoY) < 70
+                ) {
+                  puntos++;
+
+                  objetivoX =
+                    50 + r.nextFloat() *
+                    Math.max(1,getWidth()-100);
+
+                  objetivoY =
+                    160 + r.nextFloat() *
+                    Math.max(1,getHeight()-230);
                 }
 
                 postInvalidateOnAnimation();
@@ -7,10 +208,11 @@
 
               @Override
               public boolean onTouchEvent(MotionEvent e) {
-                if (e.getAction()!=MotionEvent.ACTION_UP) {
-                  x=e.getX()-45;
-                  y=e.getY()-45;
+                if (e.getAction() != MotionEvent.ACTION_UP) {
+                  x = e.getX()-45;
+                  y = e.getY()-45;
                 }
+
                 return true;
               }
             }
