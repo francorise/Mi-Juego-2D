@@ -31,10 +31,12 @@ jobs:
           pluginManagement {
             repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
+
           dependencyResolutionManagement {
             repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
             repositories { google(); mavenCentral() }
           }
+
           rootProject.name='MiJuego2D'
           include ':app'
           EOF
@@ -58,14 +60,15 @@ jobs:
               applicationId "com.juego.app"
               minSdk 24
               targetSdk 35
-              versionCode 2
-              versionName "1.1"
+              versionCode 3
+              versionName "1.2"
             }
           }
           EOF
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
             <application
               android:theme="@android:style/Theme.Material.Light.NoActionBar"
               android:label="Mi Juego 2D">
@@ -81,6 +84,7 @@ jobs:
                 </intent-filter>
 
               </activity>
+
             </application>
           </manifest>
           EOF
@@ -90,6 +94,7 @@ jobs:
 
           import android.app.Activity;
           import android.os.Bundle;
+          import android.os.SystemClock;
           import android.graphics.*;
           import android.view.*;
           import android.widget.*;
@@ -107,6 +112,7 @@ jobs:
             }
 
             void mostrarMenu() {
+
               LinearLayout menu = new LinearLayout(this);
               menu.setOrientation(LinearLayout.VERTICAL);
               menu.setGravity(Gravity.CENTER);
@@ -143,13 +149,16 @@ jobs:
               setContentView(menu);
 
               start.setOnClickListener(v -> {
+
                 String n = nombre.getText().toString().trim();
 
                 if (!n.isEmpty()) {
                   nombreJugador = n;
                 }
 
-                setContentView(new Juego(this, nombreJugador));
+                setContentView(
+                  new Juego(this, nombreJugador)
+                );
               });
             }
 
@@ -160,57 +169,266 @@ jobs:
 
               float x = 100;
               float y = 350;
+
               float objetivoX = 500;
               float objetivoY = 400;
 
               int puntos = 0;
               String jugador;
 
+              long finTiempo;
+              boolean gameOver = false;
+
+              boolean bonusActivo = false;
+              float bonusX = 0;
+              float bonusY = 0;
+              float velocidadBonus = 18;
+
+              int proximoBonus = 50;
+
+              long mensajeBonusHasta = 0;
+
               Juego(Context c, String nombre) {
                 super(c);
+
                 jugador = nombre;
+
+                finTiempo =
+                  SystemClock.uptimeMillis() + 60000;
               }
 
               @Override
               protected void onDraw(Canvas c) {
-                c.drawColor(Color.rgb(20,25,35));
 
-                p.setColor(Color.WHITE);
-                p.setTextSize(36);
-                c.drawText("Jugador: " + jugador,30,60,p);
+                long ahora =
+                  SystemClock.uptimeMillis();
 
-                p.setTextSize(30);
-                c.drawText("Puntos: " + puntos,30,105,p);
+                long restante =
+                  finTiempo - ahora;
 
-                p.setColor(Color.BLUE);
-                c.drawRect(x,y,x+90,y+90,p);
-
-                p.setColor(Color.YELLOW);
-                c.drawCircle(objetivoX,objetivoY,35,p);
-
-                if (
-                  Math.abs(x+45-objetivoX) < 70 &&
-                  Math.abs(y+45-objetivoY) < 70
-                ) {
-                  puntos++;
-
-                  objetivoX =
-                    50 + r.nextFloat() *
-                    Math.max(1,getWidth()-100);
-
-                  objetivoY =
-                    160 + r.nextFloat() *
-                    Math.max(1,getHeight()-230);
+                if (restante <= 0) {
+                  restante = 0;
+                  gameOver = true;
                 }
 
-                postInvalidateOnAnimation();
+                c.drawColor(
+                  Color.rgb(20,25,35)
+                );
+
+                p.setColor(Color.WHITE);
+                p.setTextSize(34);
+
+                c.drawText(
+                  "Jugador: " + jugador,
+                  30,
+                  55,
+                  p
+                );
+
+                p.setTextSize(30);
+
+                c.drawText(
+                  "Puntos: " + puntos,
+                  30,
+                  100,
+                  p
+                );
+
+                long segundos =
+                  (restante + 999) / 1000;
+
+                long minutos =
+                  segundos / 60;
+
+                long seg =
+                  segundos % 60;
+
+                String tiempo =
+                  String.format(
+                    "%02d:%02d",
+                    minutos,
+                    seg
+                  );
+
+                if (segundos <= 10) {
+                  p.setColor(Color.RED);
+                } else {
+                  p.setColor(Color.WHITE);
+                }
+
+                p.setTextSize(34);
+
+                c.drawText(
+                  "Tiempo: " + tiempo,
+                  30,
+                  145,
+                  p
+                );
+
+                if (!gameOver) {
+
+                  p.setColor(Color.BLUE);
+
+                  c.drawRect(
+                    x,
+                    y,
+                    x + 90,
+                    y + 90,
+                    p
+                  );
+
+                  p.setColor(Color.YELLOW);
+
+                  c.drawCircle(
+                    objetivoX,
+                    objetivoY,
+                    35,
+                    p
+                  );
+
+                  if (
+                    Math.abs(x + 45 - objetivoX) < 70 &&
+                    Math.abs(y + 45 - objetivoY) < 70
+                  ) {
+
+                    puntos++;
+
+                    objetivoX =
+                      50 + r.nextFloat() *
+                      Math.max(
+                        1,
+                        getWidth() - 100
+                      );
+
+                    objetivoY =
+                      190 + r.nextFloat() *
+                      Math.max(
+                        1,
+                        getHeight() - 270
+                      );
+                  }
+
+                  if (
+                    puntos >= proximoBonus &&
+                    !bonusActivo
+                  ) {
+
+                    bonusActivo = true;
+
+                    bonusX =
+                      40 + r.nextFloat() *
+                      Math.max(
+                        1,
+                        getWidth() - 80
+                      );
+
+                    bonusY = 190;
+
+                    proximoBonus += 50;
+                  }
+
+                  if (bonusActivo) {
+
+                    bonusY += velocidadBonus;
+
+                    p.setColor(Color.GREEN);
+
+                    c.drawCircle(
+                      bonusX,
+                      bonusY,
+                      40,
+                      p
+                    );
+
+                    if (
+                      Math.abs(x + 45 - bonusX) < 80 &&
+                      Math.abs(y + 45 - bonusY) < 80
+                    ) {
+
+                      finTiempo += 30000;
+
+                      bonusActivo = false;
+
+                      mensajeBonusHasta =
+                        ahora + 1500;
+                    }
+
+                    if (
+                      bonusY >
+                      getHeight() + 50
+                    ) {
+
+                      bonusActivo = false;
+                    }
+                  }
+
+                  if (
+                    ahora <
+                    mensajeBonusHasta
+                  ) {
+
+                    p.setColor(Color.GREEN);
+                    p.setTextSize(40);
+
+                    c.drawText(
+                      "+30 SEGUNDOS",
+                      30,
+                      200,
+                      p
+                    );
+                  }
+
+                  postInvalidateOnAnimation();
+
+                } else {
+
+                  p.setColor(Color.RED);
+                  p.setTextSize(50);
+
+                  c.drawText(
+                    "TIEMPO AGOTADO",
+                    30,
+                    300,
+                    p
+                  );
+
+                  p.setColor(Color.WHITE);
+                  p.setTextSize(42);
+
+                  c.drawText(
+                    "PERDISTE",
+                    30,
+                    360,
+                    p
+                  );
+
+                  p.setTextSize(32);
+
+                  c.drawText(
+                    "Puntaje final: " + puntos,
+                    30,
+                    420,
+                    p
+                  );
+                }
               }
 
               @Override
-              public boolean onTouchEvent(MotionEvent e) {
-                if (e.getAction() != MotionEvent.ACTION_UP) {
-                  x = e.getX()-45;
-                  y = e.getY()-45;
+              public boolean onTouchEvent(
+                MotionEvent e
+              ) {
+
+                if (gameOver) {
+                  return true;
+                }
+
+                if (
+                  e.getAction() !=
+                  MotionEvent.ACTION_UP
+                ) {
+
+                  x = e.getX() - 45;
+                  y = e.getY() - 45;
                 }
 
                 return true;
